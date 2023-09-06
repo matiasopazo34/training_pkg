@@ -12,9 +12,9 @@ class Template(object):
         super(Template, self).__init__()
         self.args = args
         #sucribir a joy 
-        self.sub = rospy.Subscriber("topic" , Joy, self.callback)
+        self.sub = rospy.Subscriber("/duckiebot/joy" , Joy, self.callback)
         #publicar la intrucciones del control en possible_cmd
-        self.publi = rospy.Publisher("topic", Twist2DStamped, queue_size = "x")
+        self.publi = rospy.Publisher("/duckiebot/wheels_driver_node/car_cmd", Twist2DStamped, queue_size = "x")
         self.twist = Twist2DStamped()
 
 
@@ -22,20 +22,31 @@ class Template(object):
         #self.publi.publish(msg)
 
     def callback(self,msg):
-        a = msg.buttons[]
-        y = msg.axes[]
-        x = msg.axes[]
-        z = msg.axes[]
+        # funciones python 
+        a = msg.buttons[0]
+        freno = msg.buttons[1] #B
+        retroceder = msg.axes[5] #L2
+        avanzar = msg.axes[2] #r2
+        giro = msg.axes [0] 
+        # z = msg.axes[]
 
-        print(y, x, z)
-        self.twist.omega = 
-        self.twist.v = 
+        #print(freno, y, x)
+        self.twist.omega = 0
+        self.twist.v = 0
+
+        if freno == 1:
+            self.twist.omega = 0
+            self.twist.v = 0
+        
+        self.publi.publish(self.twist) #mensaje que se publica, luego el duckie lo recibe
 
         if a == 1:
-            self.twist.omega = 
-            self.twist.v = 
+            print(freno)
+            self.twist.omega = giro*10
+            self.twist.v = (avanzar-1)*5*-1 - (retroceder-1)*5*-1
+
         
-        self.publi.publish(self.twist)
+        self.publi.publish(self.twist) #mensaje que se publica, luego el duckie lo recibe
         
 
 
