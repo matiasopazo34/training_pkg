@@ -7,6 +7,7 @@ from sensor_msgs.msg import Image # importar mensajes de ROS tipo Image
 import cv2 # importar libreria opencv
 from cv_bridge import CvBridge # importar convertidor de formato de imagenes
 import numpy as np # importar libreria numpy
+import matplotlib as plt #importar matplotlib
 
 class Template(object):
 	def __init__(self, args):
@@ -37,8 +38,8 @@ class Template(object):
 
 		#Definir rangos para la mascara
 
-		lower_limit = np.array([45,68,78])
-		upper_limit =np.array([50,75,85])
+		lower_limit = np.array([18,110,110])
+		upper_limit =np.array([35,255,255])
 
 		#color pato: (47,71,81)
 
@@ -48,20 +49,22 @@ class Template(object):
 		
 
 		# Operaciones morfologicas, normalmente se utiliza para "limpiar" la mascara
-		kernel = np.ones((5, 5), np.uint8)
-		img_erode = cv2.erode(mask, kernel, iterations=1) #Erosion
-		img_dilate = cv2.dilate(img_erode, kernel, iterations=1) #Dilatar 
-        
+		kernel = np.ones((3, 3), np.uint8)
+		img_erode = cv2.erode(mask, kernel, iterations=10) #Erosion
+		img_dilate = cv2.dilate(img_erode, kernel, iterations=10) #Dilatar 
+		# plt.imshow(img_dilate)
+
 		# Definir blobs
 		_,contours, hierarchy = cv2.findContours(img_dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 		for cnt in contours:
 			AREA = cv2.contourArea(cnt)
-			if AREA>10: #Filtrar por tamanho de blobs
+			if AREA>2: #Filtrar por tamanho de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
-				cv2.rectangle(image, ("coordenada","coordenada"), ("coordenada","coordenada"), ("0","0","255"), "tamanho del rectangulo en pixeles")
+				#cv2.rectangle(image, (-x,-y), (w,h), (0,0,255), 2)
+				cv2.rectangle(image, (x+x/2,y+y/2), (w,h), (0,0,255), 2)
+
 			else:
 				None
-		
 
 		# Publicar imagen final
 		msg = bridge.cv2_to_imgmsg(image, "bgr8")
