@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 import rospy #importar ros para python
@@ -7,7 +8,8 @@ from sensor_msgs.msg import Image # importar mensajes de ROS tipo Image
 import cv2 # importar libreria opencv
 from cv_bridge import CvBridge # importar convertidor de formato de imagenes
 import numpy as np # importar libreria numpy
-import matplotlib as plt #importar matplotlib
+
+
 
 class Template(object):
 	def __init__(self, args):
@@ -16,14 +18,18 @@ class Template(object):
 		#Suscribrirse a la camara
 		self.Sub_Cam = rospy.Subscriber("/duckiebot/camera_node/image/raw", Image, self.procesar_img)
         #Publicar imagen(es)
-		self.pub_img = rospy.Publisher("/duckiebot/camera_node/ojo_mcqueen", Image, queue_size = 1)
-		#self.pub_img = rospy.Publisher("mas", Image, queue_size = 1)
+		self.pub_img = rospy.Publisher("/duckiebot/ojo/mcqueen", Image, queue_size = 1)
 
+		self.min_area = 100
+		self.pub_mask_yellow = rospy.Publisher("/duckiebot/camera_note/image/mask_yellow", Image, queue_size = 1)
+		self.pub_mask_blue = rospy.Publisher("/duckiebot/camera_note/image/mask_blue", Image, queue_size = 1)
+		self.pub_mask_red = rospy.Publisher("/duckiebot/camera_note/image/mask_blue", Image, queue_size = 1)
+		#self.pub_mask_ = rospy.Publisher("/duckiebot/camera_note/image/mask_blue", Image, queue_size = 1)
 
 	def procesar_img(self, msg):
 		#Transformar Mensaje a Imagen
 		bridge = CvBridge()
-		image = bridge.imgmsg_to_cv2(msg, "bgr8") #transformada opencv #""#
+		image = bridge.imgmsg_to_cv2(msg, "bgr8")
 
 		#Espacio de color
 
@@ -36,40 +42,59 @@ class Template(object):
 
 		image_out = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) 
 
-		#Definir rangos para la mascara
+		# Definir rangos para la mascara del color amarillo
+		lower_limit_yellow = np.array([20, 100, 100])
+		upper_limit_yellow = np.array([35, 255, 255])
+ 
+		# Definir rangos para la mascara del color pd (blue)
+		lower_limit_blue = np.array([40, 200, 200])
+		upper_limit_blue = np.array([50, 255, 255])
 
-		lower_limit = np.array([18,110,110])
-		upper_limit =np.array([35,255,255])
-
-		#color pato: (47,71,81)
+		# Definir rangos para la mascara del color rojo
+                lower_limit_red = np.array([0, 0, 150])
+                upper_limit_red = np.array([10, 255, 255])
 
 		#Mascara
-		mask = cv2.inRange(image_out, lower_limit, upper_limit)
-		image_out = cv2.bitwise_and(image, image, mask=mask)
-		
+		mask_yellow = cv2.inRange(image_out, lower_limit_yellow, upper_limit_yellow)
+		mask_blue = cv2.inRange(image_out, lower_limit_blue, upper_limit_blue)
+
+		image_out_yellow = cv2.bitwise_and(image, image, mask=mask_yellow)
+		image_out_blue   = cv2.bitwise_and(image, image, mask=mask_blue)
+
+		mask_red = cv2.inRange(image_out, lower_limit_red, upper_limit_red)
+                image_out_red   = cv2.bitwise_and(image, image, mask=mask_red)
 
 		# Operaciones morfologicas, normalmente se utiliza para "limpiar" la mascara
-		kernel = np.ones((3, 3), np.uint8)
-		img_erode = cv2.erode(mask, kernel, iterations=10) #Erosion
-		img_dilate = cv2.dilate(img_erode, kernel, iterations=10) #Dilatar 
-		# plt.imshow(img_dilate)
+		kernel = np.ones((3 , 3), np.uint8)
+		img_erode = cv2.erode(mask_blue, kernel, iterations=4) #Erosion
+		img_dilate = cv2.dilate(img_erode, kernel, iterations=4) #Dilatar 
 
 		# Definir blobs
 		_,contours, hierarchy = cv2.findContours(img_dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+		dist_real=0
 		for cnt in contours:
 			AREA = cv2.contourArea(cnt)
-			if AREA>2: #Filtrar por tamanho de blobs
+			if AREA > self.min_area: #Filtrar por tamano de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
-				#cv2.rectangle(image, (-x,-y), (w,h), (0,0,255), 2)
-				cv2.rectangle(image, (x+x/2,y+y/2), (w,h), (0,0,255), 2)
-
-			else:
+				cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                                p = y+h
+                                f = 101.85916357881302
+                                tr = 3.9 
+                                dist_real = (tr*f)/p 
+			else: 
 				None
 
 		# Publicar imagen final
-		msg = bridge.cv2_to_imgmsg(image, "bgr8")
+		msg = bridge.cv2_to_imgmsg(image_out_blue, "bgr8")
+		msg_mask_yellow = bridge.cv2_to_imgmsg(image_out_yellow, "bgr8")
+		msg_mask_blue = bridge.cv2_to_imgmsg(image_out_blue, "bgr8")
+                msg_mask_red = bridge.cv2_to_imgmsg(image_out_red, "bgr8")
+                msg_dist_real = str(dist_real)
 		self.pub_img.publish(msg)
-
+		self.pub_mask_yellow.publish(msg_mask_yellow)
+		self.pub_mask_blue.publish(msg_mask_blue)
+                # self.pub_mask_red.publish(msg_mask_red)
+		# self.pub_dist_real.publish(msg_dist_real)
 def main():
 	rospy.init_node('test') #creacion y registro del nodo!
 
@@ -81,4 +106,5 @@ def main():
 
 
 if __name__ =='__main__':
-	main()
+	main()#!/usr/bin/env python
+
