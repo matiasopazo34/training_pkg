@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
+import message_filters
 import rospy #importar ros para python
+from sensor_msgs.msg import Point, Joy
 from std_msgs.msg import String, Int32 #importa mensajes de ROS tipo String y Int32
 from sensor_msgs.msg import Joy # impor mensaje tipo Joy
 from geometry_msgs.msg import Twist # importar mensajes de ROS tipo geometry / Twist
@@ -12,10 +13,16 @@ class Template(object):
         super(Template, self).__init__()
         self.args = args
         #sucribir a joy 
-        self.sub = rospy.Subscriber("/duckiebot/joy" , Joy, self.callback)
+        # self.sub = rospy.Subscriber("/duckiebot/joy" , Joy, self.callback)
         #publicar la intrucciones del control en possible_cmd
         self.publi = rospy.Publisher("/duckiebot/wheels_driver_node/car_cmd", Twist2DStamped, queue_size = "x")
         self.twist = Twist2DStamped()
+
+	mando = message_filters.Subscriber('/duckiebot/joy', Joy)
+	distancia = message_filters.Subscriber('/duckiebot/camera_note/image/distancia', Point)
+	ts = message_filters.TimeSynchronizer([mando, distancia], 10)
+	ts.registerCallback(callback)
+	rospy.spin()
 
 
     #def publicar(self, msg):
