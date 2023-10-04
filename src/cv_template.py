@@ -76,7 +76,7 @@ class Template(object):
 			AREA = cv2.contourArea(cnt)
 			if AREA > self.min_area: #Filtrar por tamano de blobs
 				x,y,w,h = cv2.boundingRect(cnt)
-				cv2.rectangle(image_out_yellow, (x, y), (x + w, y + h), (0, 0, 255), 2)
+				cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 2)
                                 p = h
                                 f = 101.85916357881302
                                 tr = 3.9 
@@ -84,13 +84,13 @@ class Template(object):
                                 self.my_point.x = 0
                                 self.my_point.y = 0
                                 self.my_point.z = dist_real
-                                self.pub_dist.publish(self.my_point)
+                                self.pub_dist.publish(self.my_point) # aqui se publica nuestro punto
                                 
 			else: 
 				None
 
 		# Publicar imagen final
-	        msg_out = bridge.cv2_to_imgmsg(image_out_yellow, "bgr8")
+	        msg_out = bridge.cv2_to_imgmsg(image, "bgr8")
 		msg_mask_yellow = bridge.cv2_to_imgmsg(image_out_yellow, "bgr8")
 		msg_mask_blue = bridge.cv2_to_imgmsg(image_out_blue, "bgr8")
 	        msg_mask_red = bridge.cv2_to_imgmsg(image_out_red, "bgr8")
@@ -101,7 +101,7 @@ class Template(object):
 		self.pub_mask_blue.publish(msg_mask_blue)
         	self.pub_mask_red.publish(msg_mask_red)
                # self.pub_dist.publish(msg_dist_real) ##################################
-		# self.pub_dist_real.publish(msg_dist_real) ####################################
+	       # self.pub_dist_real.publish(msg_dist_real) ####################################
 def main():
 	rospy.init_node('test') #creacion y registro del nodo!
 
