@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-import message_filters
 import rospy #importar ros para python
-from sensor_msgs.msg import Point, Joy
+import message_filters # para unir 2 suscriber
 from std_msgs.msg import String, Int32 #importa mensajes de ROS tipo String y Int32
-from sensor_msgs.msg import Joy # impor mensaje tipo Joy
+from sensor_msgs.msg import Point, Joy # impor mensaje tipo Joy
 from geometry_msgs.msg import Twist # importar mensajes de ROS tipo geometry / Twist
 from duckietown_msgs.msg import Twist2DStamped 
 
@@ -17,7 +16,7 @@ class Template(object):
         #publicar la intrucciones del control en possible_cmd
         self.publi = rospy.Publisher("/duckiebot/wheels_driver_node/car_cmd", Twist2DStamped, queue_size = "x")
         self.twist = Twist2DStamped()
-
+        #suscribers 
 	mando = message_filters.Subscriber('/duckiebot/joy', Joy)
 	distancia = message_filters.Subscriber('/duckiebot/camera_note/image/distancia', Point)
 	ts = message_filters.TimeSynchronizer([mando, distancia], 10)
@@ -35,17 +34,23 @@ class Template(object):
         retroceder = msg.axes[5] #L2
         avanzar = msg.axes[2] #r2
         giro = msg.axes [0] 
+	distancia = self.my_point # ponerlo como mensaje¿
         # z = msg.axes[]
 
         #print(freno, y, x)
         self.twist.omega = 0
         self.twist.v = 0
 
+	#para que el pato se frene
+	if distancia <=10: 
+	    self.twist.omega = 0
+            self.twist.v = 0
+
         if freno == 1:
             self.twist.omega = 0
             self.twist.v = 0
-        
-        self.publi.publish(self.twist) #mensaje que se publica, luego el duckie lo recibe
+		
+	#aqui habia un publisher del duckie
 
         if a == 1:
             print(freno)
