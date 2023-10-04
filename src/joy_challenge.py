@@ -16,7 +16,7 @@ class Template(object):
         #publicar la intrucciones del control en possible_cmd
         self.publi = rospy.Publisher("/duckiebot/wheels_driver_node/car_cmd", Twist2DStamped, queue_size = "x")
         self.twist = Twist2DStamped()
-        #suscribers 
+        #suscribers (debe de haber un self.pub_algo¿)
 	mando = message_filters.Subscriber('/duckiebot/joy', Joy)
 	distancia = message_filters.Subscriber('/duckiebot/camera_note/image/distancia', Point)
 	ts = message_filters.TimeSynchronizer([mando, distancia], 10)
